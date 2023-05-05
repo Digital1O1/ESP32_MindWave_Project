@@ -8,15 +8,20 @@
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define LED_PIN 2
 #define RC_CAR_PIN 5
-//  Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+#define PWM_MUTIPLIER 1.5
+#define SAMPLE_SIZE 10
+#define ARRAY_SIZE 10
 const unsigned int MAX_MESSAGE_LENGTH = 12;
-// int LED_PIN = 2;
-int incoming_Data;
+int eeg_sample_data_count = 0;
+int eeg_array[ARRAY_SIZE];
+int count = 0;
+
 // setting PWM properties
 const int freq = 5000;
 const int ledChannel = 0;
 const int resolution = 8;
+
+Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setup()
 {
@@ -35,7 +40,6 @@ void setup()
       ;
   }
   OLED.clearDisplay();
-
   OLED.setTextSize(1);
   OLED.setTextColor(WHITE);
 }
@@ -49,21 +53,27 @@ void loop()
     static unsigned int message_pos = 0;
 
     // Read the next available byte in the serial receive buffer
-    char inByte = Serial.read();
+    char incoming_byte = Serial.read();
 
     // Message coming in (check not terminating character) and guard for over message size
-    if (inByte != '\n' && (message_pos < MAX_MESSAGE_LENGTH - 1))
+    if (incoming_byte != '\n' && (message_pos < MAX_MESSAGE_LENGTH - 1))
     {
       // Add the incoming byte to our message
-      message[message_pos] = inByte;
+      message[message_pos] = incoming_byte;
       message_pos++;
     }
-    // Full message received...
+
+    // Full message received DO STUFF HERE
     else
     {
+      // Display values on OLED
       OLED.clearDisplay();
-      OLED.setCursor(0, 10);
+      OLED.setCursor(0, 0);
       OLED.print("Attention : ");
+
+      OLED.setCursor(0, 20);
+      OLED.print("Sample Counter : ");
+
       OLED.setCursor(0, 40);
       OLED.print("PWM value : ");
       // OLED.setCursor(80, 10);
@@ -73,24 +83,61 @@ void loop()
 
       // Print the message (or do other things)
       Serial.println(message);
-      OLED.setCursor(80, 10);
-      OLED.print(message);
+      OLED.setCursor(80, 0);
+      OLED.print(message); // Attention value
 
       // Convert char to int for PWM signal
-      int pwm_value = atoi(message) * 1;
-      if (pwm_value > 70)
-      {
-        digitalWrite(RC_CAR_PIN, HIGH);
-        Serial.println("ON");
-      }
-      else
-      {
-        digitalWrite(RC_CAR_PIN, LOW);
-      }
+      int incoming_attention_value = atoi(message) * PWM_MUTIPLIER;
       OLED.setCursor(80, 40);
-      OLED.print(pwm_value);
+      OLED.print(incoming_attention_value);
 
-      ledcWrite(ledChannel, pwm_value);
+      /*
+        Count 10 attention values that are above 0
+
+        Store 10 attention values in an array
+
+        Take the average of that array
+
+        Use the mentioned average as the 'threshold' 
+
+        Control whatever peripheral once that threshold is reached 
+      */
+
+      if(incoming_attention_value > 0)
+      {
+        eeg_array[count] = incoming_attention_value;
+        printf("EEG Attention Value : %d \r\n",eeg_array[count]);
+
+        count++;
+        
+        OLED.setCursor(100, 20);
+        OLED.print(count);
+
+        // if(count == 10)
+        // {
+        //   while(true)
+        //   {
+        //     printf("FLAG\r\n");
+        //   }
+        // }
+      }
+
+
+
+      // if (incoming_attention_value > 70)
+      // {
+      //   digitalWrite(RC_CAR_PIN, HIGH);
+      //   Serial.println("ON");
+      // }
+      // else
+      // {
+      //   digitalWrite(RC_CAR_PIN, LOW);
+      // }
+
+      // OLED.setCursor(80, 40);
+      // OLED.print(incoming_attention_value);
+
+      ledcWrite(ledChannel, incoming_attention_value);
 
       OLED.display();
       // Reset for the next message

@@ -27,7 +27,7 @@ print("CONNECTING TO HEADSET")
 
 
 headset = mindwave.Headset("COM10")
-# headset.connect()
+#headset.connect()
 # headset.serial_close
 # headset.serial_open
 
@@ -72,8 +72,8 @@ def plot_Mindwave_data(i):
     current_time = datetime.datetime.now()
     time.append(current_time.strftime("%S.%f")[:-3])
     raw_values.append(abs(headset.raw_value))
-    # ax.plot(time, raw_values)
-    ax.set_xticklabels(time, rotation=45)
+    #ax.plot(time, raw_values)
+    ax.set_xticklabels(time, rotation = 45)
 
     ax.plot(time, raw_values)
     # ax.set_ylim(0, 100)
@@ -85,7 +85,7 @@ def plot_Mindwave_data(i):
     # time.append(current_time.second)
     attention_values.append(headset.attention)
     ax1.plot(time, attention_values)
-    ax1.set_xticklabels(time, rotation=45)
+    ax1.set_xticklabels(time, rotation = 45)
     # ax1.set_xticklabels(rotation=45)
 
     ax1.plot(time, attention_values)
