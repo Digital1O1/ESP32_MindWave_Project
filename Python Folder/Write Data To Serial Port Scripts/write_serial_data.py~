@@ -1,0 +1,20 @@
+# Reference link : http://firmlyembedded.co.za/useful-python-script-to-send-and-receive-serial-data/
+
+import time
+import serial
+
+ser = serial.Serial('COM9')
+ser.baudrate = 115200
+ser.bytesize = 8
+ser.parity = 'N'
+ser.stopbits = 1
+
+count = 0
+
+while 1:
+    ser.write(b'Hello')
+    #ser.write(count)
+    #ser.write('\n')
+    #print(count)
+    time.sleep(1)
+    #count += 1
