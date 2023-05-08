@@ -4,8 +4,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_WIDTH 128 // oled display width, in pixels
+#define SCREEN_HEIGHT 64 // oled display height, in pixels
 #define LED_PIN 2
 #define RC_CAR_PIN 5
 #define PWM_MUTIPLIER 1.5
@@ -21,7 +21,9 @@ const int freq = 5000;
 const int ledChannel = 0;
 const int resolution = 8;
 
-Adafruit_SSD1306 OLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+bool sampling_flag = false;
+
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setup()
 {
@@ -29,19 +31,20 @@ void setup()
   // configure LED PWM functionalitites
   ledcSetup(ledChannel, freq, resolution);
   pinMode(RC_CAR_PIN, OUTPUT);
+  // pinMode(LED_PIN,OUTPUT);
 
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(LED_PIN, ledChannel);
 
-  if (!OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ;
   }
-  OLED.clearDisplay();
-  OLED.setTextSize(1);
-  OLED.setTextColor(WHITE);
+  oled.clearDisplay();
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
 }
 void loop()
 {
@@ -66,30 +69,42 @@ void loop()
     // Full message received DO STUFF HERE
     else
     {
-      // Display values on OLED
-      OLED.clearDisplay();
-      OLED.setCursor(0, 0);
-      OLED.print("Attention : ");
+      // Display values on oled
+      // oled.clearDisplay();
+      // oled.setCursor(0, 0);
+      // oled.print("Attention : ");
+      // oled.setCursor(0, 20);
+      // oled.print("Sample Counter : ");
+      // oled.setCursor(0, 40);
+      // oled.print("PWM value : ");
+      // oled.setCursor(80, 10);
 
-      OLED.setCursor(0, 20);
-      OLED.print("Sample Counter : ");
+      oled.clearDisplay();
+      oled.setCursor(0, 0);
+      oled.print("Attention : ");
 
-      OLED.setCursor(0, 40);
-      OLED.print("PWM value : ");
-      // OLED.setCursor(80, 10);
+      oled.setCursor(0, 20);
+      oled.print("Sample Counter : ");
+
+      oled.setCursor(0, 50);
+      oled.print("PWM value : ");
+
+      oled.setCursor(0, 30);
+      oled.print("Sample Average : ");
 
       // Add null character to string
       message[message_pos] = '\0';
 
-      // Print the message (or do other things)
+      // Print the message/attention value (or do other things)
       Serial.println(message);
-      OLED.setCursor(80, 0);
-      OLED.print(message); // Attention value
+      oled.setCursor(80, 0);
+      oled.print(message); // Attention value
+      int old_message = atoi(message);
 
       // Convert char to int for PWM signal
-      int incoming_attention_value = atoi(message) * PWM_MUTIPLIER;
-      OLED.setCursor(80, 40);
-      OLED.print(incoming_attention_value);
+      int pwm_attention_value = atoi(message) * PWM_MUTIPLIER;
+      oled.setCursor(80, 50);
+      oled.print(pwm_attention_value);
 
       /*
         Count 10 attention values that are above 0
@@ -98,48 +113,45 @@ void loop()
 
         Take the average of that array
 
-        Use the mentioned average as the 'threshold' 
+        Use the mentioned average as the 'threshold'
 
-        Control whatever peripheral once that threshold is reached 
+        Control whatever peripheral once that threshold is reached
       */
-
-      if(incoming_attention_value > 0)
+      while (sampling_flag == false)
       {
-        eeg_array[count] = incoming_attention_value;
-        printf("EEG Attention Value : %d \r\n",eeg_array[count]);
+        ledcWrite(ledChannel, 0);
 
-        count++;
-        
-        OLED.setCursor(100, 20);
-        OLED.print(count);
+        // digitalWrite(LED_PIN,LOW);
+        if (atoi(message) > 0 && old_message != atoi(message))
+        {
+          eeg_array[count] = pwm_attention_value;
+          // printf("EEG Attention Value : %d \r\n", eeg_array[count]);
+          oled.setCursor(0, 40);
+          oled.print("Sampled value : ");
+          oled.setCursor(100, 40);
+          oled.print(eeg_array[count]);
+          count++;
 
-        // if(count == 10)
-        // {
-        //   while(true)
-        //   {
-        //     printf("FLAG\r\n");
-        //   }
-        // }
+          oled.setCursor(100, 20);
+          oled.print(count);
+          oled.display();
+        }
+        if (count == 10)
+        {
+          ledcWrite(ledChannel, 255);
+
+          while (true)
+            ;
+        }
       }
 
+      // Sample average
+      oled.setCursor(100, 30);
+      oled.print("555");
 
+      ledcWrite(ledChannel, pwm_attention_value);
 
-      // if (incoming_attention_value > 70)
-      // {
-      //   digitalWrite(RC_CAR_PIN, HIGH);
-      //   Serial.println("ON");
-      // }
-      // else
-      // {
-      //   digitalWrite(RC_CAR_PIN, LOW);
-      // }
-
-      // OLED.setCursor(80, 40);
-      // OLED.print(incoming_attention_value);
-
-      ledcWrite(ledChannel, incoming_attention_value);
-
-      OLED.display();
+      oled.display();
       // Reset for the next message
       message_pos = 0;
     }
