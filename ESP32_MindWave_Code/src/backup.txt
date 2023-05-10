@@ -1,0 +1,205 @@
+// https://www.programmingelectronics.com/serial-read/
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // oled display width, in pixels
+#define SCREEN_HEIGHT 64 // oled display height, in pixels
+#define LED_PIN 2
+#define RC_CAR_PIN 5
+#define PWM_MUTIPLIER 1.5
+#define SAMPLE_COUNT 10
+#define ARRAY_SIZE 10
+const unsigned int MAX_MESSAGE_LENGTH = 12;
+int eeg_sample_data_count = 0;
+int eeg_array[ARRAY_SIZE];
+int count = 0;
+
+// setting PWM properties
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 8;
+
+int incoming_value;
+int value_array[ARRAY_SIZE];
+int old_attention_value = 0;
+bool sample_flag = false;
+int sample_counter = 0;
+int running_sum = 0;
+int threshold_average = 0;
+
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+void setup()
+{
+  Serial.begin(115200);
+  // configure LED PWM functionalitites
+  ledcSetup(ledChannel, freq, resolution);
+  pinMode(RC_CAR_PIN, OUTPUT);
+  // pinMode(LED_PIN,OUTPUT);
+
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(LED_PIN, ledChannel);
+
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;
+  }
+  oled.clearDisplay();
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+
+  oled.clearDisplay();
+  oled.setCursor(0, 0);
+  oled.print("PROGRAM ");
+  oled.setCursor(80, 0);
+  oled.print("STARTED");
+  oled.display();
+}
+void loop()
+{
+  // Check to see if anything is available in the serial receive buffer
+  while (Serial.available() > 0)
+  {
+    // Create a place to hold the incoming message
+    static char message[MAX_MESSAGE_LENGTH];
+    static unsigned int message_pos = 0;
+
+    // Read the next available byte in the serial receive buffer
+    char incoming_byte = Serial.read();
+
+    // Message coming in (check not terminating character) and guard for over message size
+    if (incoming_byte != '\n' && (message_pos < MAX_MESSAGE_LENGTH - 1))
+    {
+      // Add the incoming byte to our message
+      message[message_pos] = incoming_byte;
+      message_pos++;
+    }
+
+    // Full message received DO STUFF HERE
+    else
+    {
+      // Display values on oled
+      // oled.clearDisplay();
+      // oled.setCursor(0, 0);
+      // oled.print("Attention : ");
+      // oled.setCursor(0, 20);
+      // oled.print("Sample Counter : ");
+      // oled.setCursor(0, 40);
+      // oled.print("PWM value : ");
+      // oled.setCursor(80, 10);
+
+      // Add null character to string
+      message[message_pos] = '\0';
+
+      oled.clearDisplay();
+      oled.setCursor(0, 0);
+      oled.print("Attention : ");
+      oled.setCursor(80, 0);
+      // Attention value
+      oled.print(message);
+
+      // oled.setCursor(0, 0);
+      // oled.print("Attention : ");
+
+      // oled.setCursor(0, 20);
+      // oled.print("Sample Counter : ");
+
+      // oled.setCursor(0, 50);
+      // oled.print("PWM value : ");
+
+      // oled.setCursor(0, 30);
+      // oled.print("Sample Average : ");
+
+      // Print the message/attention value (or do other things)
+      // Serial.println(message);
+      // oled.setCursor(80, 0);
+      // oled.print(message); // Attention value
+      int attention_value = atoi(message);
+
+      // Convert char to int for PWM signal
+      int pwm_attention_value = atoi(message) * PWM_MUTIPLIER;
+      oled.setCursor(0, 50);
+      oled.print("PWM value : ");
+      oled.setCursor(80, 50);
+      oled.print(pwm_attention_value);
+
+      /*
+        Count 10 attention values that are above 0
+        Store 10 attention values in an array
+        Take the average of that array
+        Use the mentioned average as the 'threshold'
+        Control whatever peripheral once that threshold is reached
+      */
+      while (sample_flag == false)
+      {
+        oled.clearDisplay();
+        // Check incoming data
+        if (attention_value != old_attention_value && attention_value > 0)
+        {
+          if (sample_counter == SAMPLE_COUNT)
+          {
+            int array_size = sizeof(value_array) / sizeof(value_array[0]);
+            for (int i = 0; i < array_size; i++)
+            {
+              running_sum += value_array[i];
+
+              oled.setCursor(0, 0);
+              oled.print("Incoming Samples ");
+              oled.setCursor(0, 20);
+              oled.print(value_array[i]); // Attention value
+              oled.display();
+            }
+            threshold_average = running_sum / array_size;
+            oled.setCursor(0, 30);
+            oled.print("Average : ");
+            oled.setCursor(90, 30);
+            oled.print(threshold_average);
+            oled.display();
+
+            // Exit the while loop
+            sample_flag = true;
+            while (true)
+            {
+              oled.clearDisplay();
+              oled.setCursor(0, 0);
+              oled.print("SAMPLING ");
+              oled.setCursor(0, 20);
+              oled.print("COMPLETE"); // Attention value
+              oled.display();
+            }
+          }
+
+          else
+          {
+            value_array[sample_counter] = attention_value;
+            sample_counter++;
+            oled.setCursor(0, 20);
+            oled.print("Counter : ");
+            oled.setCursor(90, 20);
+            oled.print(sample_counter);
+            oled.display();
+          }
+        }
+
+        // Ignore the values
+        else
+        {
+          int ignore_value = attention_value;
+        }
+
+        // Store previous value here
+        old_attention_value = attention_value;
+      } // end of 'while (sample_flag == false'
+
+      ledcWrite(ledChannel, pwm_attention_value);
+
+      oled.display();
+      // Reset for the next message
+      message_pos = 0;
+    }
+  }
+}

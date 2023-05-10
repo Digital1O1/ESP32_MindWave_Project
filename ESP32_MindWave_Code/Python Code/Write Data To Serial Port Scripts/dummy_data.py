@@ -21,15 +21,8 @@ current_time = time.time()
 
 # headset = mindwave.Headset('/dev/tty.MindWaveMobile-DevA')
 print("CONNECTING TO HEADSET")
+# headset = mindwave.Headset("COM11")
 
-
-headset = mindwave.Headset("COM11")
-# headset.connect()
-# headset.serial_close
-# headset.serial_open
-
-# headset = mindwave.Headset('COM10',"C464E3E8E9B3")
-# headset2 = mindwave.Headset('COM12',"C464E3EAA308")
 count_down = 5
 
 for _ in range(5):
@@ -38,18 +31,9 @@ for _ in range(5):
     time.sleep(1)
 print("PROGRAM STARTED....")
 
-# pprint(vars(headset))
-# print("-----------------")
-# pprint(vars(headset2))
 
-# exit()
+# time.sleep(2)
 
-time.sleep(2)
-
-
-# headset.raw_value = collections.deque(np.zeros(10))
-# print("Raw Value: {}".format(headset.raw_value))
-# print("Memory: {}".format(ram))
 
 time = []
 raw_values = []
@@ -62,6 +46,8 @@ sample_counter = 0
 
 raw_values = collections.deque([], maxlen=10)
 attention_values = collections.deque([], maxlen=10)
+# attention_average = collections.deque([], maxlen=10)
+
 time = collections.deque([], maxlen=10)
 
 
@@ -73,6 +59,8 @@ def plot_Mindwave_data(i):
     global old_value
     global ignore_value
     # raw_values.popleft()
+    random1 = random.randint(1, 10)
+    random2 = random.randint(1, 5)
 
     ax.cla()
     ax1.cla()
@@ -82,7 +70,7 @@ def plot_Mindwave_data(i):
     ax.set_ylabel("Signal Amplitude")
     current_time = datetime.datetime.now()
     time.append(current_time.strftime("%S.%f")[:-3])
-    raw_values.append(abs(headset.raw_value))
+    raw_values.append(abs(random1))
     # ax.plot(time, raw_values)
     ax.set_xticklabels(time, rotation=45)
     ax.plot(time, raw_values)
@@ -92,26 +80,18 @@ def plot_Mindwave_data(i):
     ax1.set_xlabel("Elasped Time (ms)")
     ax1.set_ylabel("Signal Amplitude")
     # time.append(current_time.second)
-    attention_values.append(headset.attention)
-    ax1.plot(time, attention_values)
-    ax1.set_xticklabels(time, rotation=45)
-    # ax1.set_xticklabels(rotation=45)
-    ax1.plot(time, attention_values)
-    # ax1.set_ylim(0, 100)
-
-    new_value = int(headset.attention)
+    attention_values.append(random2)
 
     # Put values into list here and iterate sample counter
-    if sample_flag == 0 and sample_counter != 10 and old_value != new_value:
-        # attention_average = new_value
-        attention_average.append(new_value)
+    if sample_flag == 0 and sample_counter != 10 and old_value != random2:
+        attention_average = attention_values
         sample_counter += 1
 
     # Ignore if values are the same
-    if old_value == new_value:
+    if old_value == random2:
         # print("Incoming value : ", random2)
         # print("Old value : ", old_value)
-        ignore_value = new_value
+        ignore_value = random2
 
     # Calculate average of the first 10 samples
     if sample_counter == 10 and sample_flag == 0:
@@ -121,23 +101,30 @@ def plot_Mindwave_data(i):
         print("Flag status : ", sample_flag)
         sample_flag = 1
 
-    if new_value > threshold and sample_flag == 1:
-        print(
-            "\nCurrent threshold value [ %s ] || Value sent to ESP [ %s ] "
-            % (threshold, new_value),
-        )
-        # print("Sent to esp : ", new_value)
-        print(
-            "Raw value: %s, Attention: %s, Meditation: %s"
-            % (headset.raw_value, headset.attention, headset.meditation)
-        )
-        dataToESP32 = bytearray(str(headset.attention), "utf8")
+    ax1.plot(time, attention_values)
+    ax1.set_xticklabels(time, rotation=45)
+    # ax1.set_xticklabels(rotation=45)
+    ax1.plot(time, attention_values)
+    # ax1.set_ylim(0, 100)
+
+    # Check if incoming values break threshold and if sample_flag is set to TRUE
+    if random2 > threshold and sample_flag == 1:
+        # print("Current threshold value : ", threshold)
+        # print("Sent to esp : ", random2)
+        dataToESP32 = bytearray(str(random2), "utf8")
         serial_Port.write(dataToESP32)
         serial_Port.write(b"\r\n")
 
-    old_value = headset.attention
+    # print("Generated values ", raw_values, attention_average)
+    # print(
+    #     "Raw value: %s, Attention: %s, Meditation: %s"
+    #     % (headset.raw_value, headset.attention, headset.meditation)
+    # )
+
+    old_value = random2
 
 
+# sample_counter = 0
 threshold = 0
 old_value = 0
 fig = plt.figure(figsize=(12, 6), facecolor="#DEDEDE")

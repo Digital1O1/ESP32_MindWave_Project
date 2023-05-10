@@ -10,7 +10,6 @@ import serial
 
 
 import serial
-
 from pprint import pprint
 
 serial_Port = serial.Serial("COM9")
@@ -26,7 +25,7 @@ current_time = time.time()
 print("CONNECTING TO HEADSET")
 
 
-headset = mindwave.Headset("COM10")
+headset = mindwave.Headset("COM11")
 #headset.connect()
 # headset.serial_close
 # headset.serial_open

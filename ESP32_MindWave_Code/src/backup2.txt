@@ -13,7 +13,7 @@
 #define ARRAY_SIZE 10
 const unsigned int MAX_MESSAGE_LENGTH = 12;
 int eeg_sample_data_count = 0;
-int eeg_array[10];
+int eeg_array[ARRAY_SIZE];
 int count = 0;
 
 // setting PWM properties
@@ -29,7 +29,7 @@ bool set_threshold = false;
 int sample_counter = 0;
 int running_sum = 0;
 int threshold_average = 0;
-int eeg_array_size = sizeof(eeg_array) / sizeof(eeg_array[0]);
+
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setup()
@@ -78,28 +78,49 @@ void loop()
     {
       // Add null character to string
       message[message_pos] = '\0';
+
+      // Print the message/attention value (or do other things)
       oled.clearDisplay();
 
-      int attention_value = atoi(message);
-      int pwm_attention_value = attention_value * PWM_MUTIPLIER;
-
       oled.setCursor(0, 0);
-      oled.print("Attention  : ");
+      oled.print("Raw values : ");
       oled.setCursor(80, 0);
       // Attention value
-      oled.print(attention_value);
+      oled.print(message);
+      int attention_value = atoi(message);
 
-      oled.setCursor(0, 55);
+      // if (attention_value > 0 && attention_value != old_attention_value)
+      //{
+
+      oled.setCursor(0, 20);
+      oled.print("Sampled  : ");
+      oled.setCursor(80, 20);
+      // Attention value
+      // oled.print(attention_value);
+      // oled.print(value_array[sample_counter]);
+      sample_counter++;
+
+      oled.setCursor(0, 30);
+      oled.print("Sample Counter : ");
+      oled.setCursor(100, 30);
+      oled.print(sample_counter); // Attention value
+      oled.display();
+      //}
+
+      // Convert char to int for PWM signal
+      int pwm_attention_value = atoi(message) * PWM_MUTIPLIER;
+      oled.setCursor(0, 50);
       oled.print("PWM value : ");
-      oled.setCursor(80, 55);
+      oled.setCursor(80, 50);
       oled.print(pwm_attention_value);
+      ledcWrite(ledChannel, pwm_attention_value);
+
       oled.display();
 
       // Store previous value here
-      //old_attention_value = attention_value;
-      // Reset for the next message
-      ledcWrite(ledChannel, pwm_attention_value);
+      old_attention_value = attention_value;
 
+      // Reset for the next message
       message_pos = 0;
     }
   }

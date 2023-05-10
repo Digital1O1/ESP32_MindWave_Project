@@ -1,53 +1,77 @@
-/******************************************************************************
-
-                              Online C++ Compiler.
-               Code, Compile, Run and Debug C++ program online.
-Write your code in this editor and press "Run" button to compile and execute it.
-
-*******************************************************************************/
-
 #include <iostream>
-#include <stdio.h>  /* printf, scanf, puts, NULL */
-#include <stdlib.h> /* srand, rand */
-#include <time.h>   /* time */
+#include <stdio.h>
 
+#define SAMPLE_COUNT 10
+#define ARRAY_SIZE 5
 using namespace std;
 
 int main()
 {
-    int storage[10];
-    float sum = 0;
-    float random_number = 0;
 
-    srand(time(NULL));
+    int incoming_value;
+    int value_array[ARRAY_SIZE];
+    int old_value = 0;
+    bool sample_flag = false;
+    int sample_count = 0;
+    int running_sum = 0;
 
-    for (int i = 0; i < 10; i++)
+    printf("Enter a value : ");
+
+    // for(int i = 0; i < 5; i++)
+    while (sample_flag == false)
     {
-        // storage[i] = rand() %10 +1;
-        // printf("%d \r\n", storage[i]);
-        random_number = rand() % 10 + 1;
-        storage[i] = random_number;
-        // printf("numbers being added : %d \r\n",random_number);
-        // sum += random_number;
-        sum += storage[i];
+        printf("Enter a value : ");
+        scanf("%d", &incoming_value);
+
+        if (incoming_value != old_value && incoming_value > 0)
+        {
+            // Store the values here
+            // printf("Not the same\r\n");
+
+            if (sample_count == 5)
+            {
+                printf("\r\nMAX REACHED \r\n");
+                sample_flag = true;
+                // break;
+            }
+            else
+            {
+                value_array[sample_count] = incoming_value;
+                // running_sum += value_array[sample_count];
+
+                // printf("Value inserted : %d || Count : %d ", value_array[sample_count], sample_count);
+
+                sample_count++;
+            }
+            // value_array[i] = incoming_value;
+        }
+        else
+        {
+            // Ignore the values here
+            int ignore_value = incoming_value;
+            printf("VALUE NOT SAVED\r\n");
+        }
+
+        // Store previous value here
+        old_value = incoming_value;
     }
 
-    // for(int i = 0; i < sizeof(storage)/sizeof(int); i++)
-    // {
-    //     printf("%d ", storage[i]);
-    // }
+    cout << "-----------------" << endl;
 
-    float average = 0.0;
+    printf("Sum : ", running_sum);
 
-    int storage_array_size = sizeof(storage) / sizeof(storage[0]);
-    average = sum / storage_array_size;
-    // average = sum / sizeof(storage)/sizeof(storage[0]);
-    printf("sum : %f\r\n", sum);
-    printf("array size : %ld \r\n", sizeof(storage) / sizeof(int));
-    cout << "Average : " << average << endl;
-    // printf("average : %d\r\n",average);
+    int array_size = sizeof(value_array) / sizeof(value_array[0]);
 
-    // printf("%d",sum);
+    for (int i = 0; i < array_size; i++)
+    {
+        running_sum += value_array[i];
+
+        printf("Value inserted : %d || Count : %d  || Running sum : %d \r\n", value_array[i], i, running_sum);
+
+        //printf("%d \r\n", value_array[i]);
+    }
+
+    printf("Average : %d \r\n",running_sum/array_size);
 
     return 0;
 }

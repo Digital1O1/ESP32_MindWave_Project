@@ -1,13 +1,24 @@
 {
 	"folders": [
 		{
-			"path": "."
+			"path": "ESP32_MindWave_Code"
+		},
+		{
+			"name": "ESP32_OLED_I2C_096_Test",
+			"path": "../ESP32_OLED_I2C_096_Test"
+		},
+		{
+			"name": "Seeed_XAIO_Led_Test",
+			"path": "../Seeed_XAIO_Led_Test"
 		}
 	],
 	"settings": {
 		"[python]": {
 			"editor.defaultFormatter": "ms-python.black-formatter"
 		},
-		"python.formatting.provider": "none"
+		"python.formatting.provider": "none",
+		"files.associations": {
+			"system_error": "cpp"
+		}
 	}
 }
