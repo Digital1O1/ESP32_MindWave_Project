@@ -25,10 +25,10 @@ print("CONNECTING TO HEADSET")
 
 count_down = 5
 
-for _ in range(5):
-    print("Program starting in : ", count_down)
-    count_down -= 1
-    time.sleep(1)
+# for _ in range(5):
+#     print("Program starting in : ", count_down)
+#     count_down -= 1
+#     time.sleep(1)
 print("PROGRAM STARTED....")
 
 
@@ -38,6 +38,7 @@ print("PROGRAM STARTED....")
 time = []
 raw_values = []
 attention_values = []
+threshold_values = []
 attention_average = []
 ignore_value = 0
 sample_flag = 0
@@ -46,8 +47,7 @@ sample_counter = 0
 
 raw_values = collections.deque([], maxlen=10)
 attention_values = collections.deque([], maxlen=10)
-# attention_average = collections.deque([], maxlen=10)
-
+threshold_values = collections.deque([], maxlen=10)
 time = collections.deque([], maxlen=10)
 
 
@@ -79,6 +79,7 @@ def plot_Mindwave_data(i):
     ax1.set_title("ATTENTION VALUES")
     ax1.set_xlabel("Elasped Time (ms)")
     ax1.set_ylabel("Signal Amplitude")
+
     # time.append(current_time.second)
     attention_values.append(random2)
 
@@ -101,11 +102,19 @@ def plot_Mindwave_data(i):
         print("Flag status : ", sample_flag)
         sample_flag = 1
 
-    ax1.plot(time, attention_values)
+    threshold_values.append(threshold)
+    # ax1.plot(time, attention_values)
+    # ax1.plot(time, threshold_values)
+
+    ax1.plot(time, attention_values, label="Attention Values")
+    ax1.plot(time, threshold_values, label="Set Threshold")
+
     ax1.set_xticklabels(time, rotation=45)
     # ax1.set_xticklabels(rotation=45)
     ax1.plot(time, attention_values)
     # ax1.set_ylim(0, 100)
+
+    ax1.legend(loc="upper right", shadow=True, fancybox=True)
 
     # Check if incoming values break threshold and if sample_flag is set to TRUE
     if random2 > threshold and sample_flag == 1:

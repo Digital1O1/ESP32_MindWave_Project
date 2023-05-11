@@ -22,46 +22,38 @@ current_time = time.time()
 # headset = mindwave.Headset('/dev/tty.MindWaveMobile-DevA')
 print("CONNECTING TO HEADSET")
 
+# print("COLLECTING 10 UNIQUE EEG DATA POINTS WHEN PROGRAM STARTS")
+# print("HAVE USER FOCUS ON A KEYWORD")
+
 
 headset = mindwave.Headset("COM11")
-# headset.connect()
-# headset.serial_close
-# headset.serial_open
-
-# headset = mindwave.Headset('COM10',"C464E3E8E9B3")
-# headset2 = mindwave.Headset('COM12',"C464E3EAA308")
 count_down = 5
 
-for _ in range(5):
-    print("Program starting in : ", count_down)
-    count_down -= 1
-    time.sleep(1)
-print("PROGRAM STARTED....")
+# for _ in range(5):
+#     print("Program starting in : ", count_down)
+#     count_down -= 1
+#     time.sleep(1)
+print("PROGRAM STARTED")
 
-# pprint(vars(headset))
-# print("-----------------")
-# pprint(vars(headset2))
-
-# exit()
 
 time.sleep(2)
 
-
-# headset.raw_value = collections.deque(np.zeros(10))
-# print("Raw Value: {}".format(headset.raw_value))
-# print("Memory: {}".format(ram))
+print("SAMPLING IN PROGRESS...")
 
 time = []
 raw_values = []
 attention_values = []
+threshold_values = []
 attention_average = []
 ignore_value = 0
 sample_flag = 0
 # sample_counter = 0
 sample_counter = 0
+eeg_data_point = 0
 
 raw_values = collections.deque([], maxlen=10)
 attention_values = collections.deque([], maxlen=10)
+threshold_values = collections.deque([], maxlen=10)
 time = collections.deque([], maxlen=10)
 
 
@@ -91,21 +83,25 @@ def plot_Mindwave_data(i):
     ax1.set_title("ATTENTION VALUES")
     ax1.set_xlabel("Elasped Time (ms)")
     ax1.set_ylabel("Signal Amplitude")
+
     # time.append(current_time.second)
     attention_values.append(headset.attention)
-    ax1.plot(time, attention_values)
-    ax1.set_xticklabels(time, rotation=45)
-    # ax1.set_xticklabels(rotation=45)
-    ax1.plot(time, attention_values)
-    # ax1.set_ylim(0, 100)
-
     new_value = int(headset.attention)
+
+    # ax1.plot(time, attention_values)
+    # ax1.plot(time, attention_values, label="Attention Values")
+    # ax1.plot(time, threshold_values, label="Set Threshold")
+    # ax1.set_xticklabels(time, rotation=45)
+    # ax1.set_xticklabels(rotation=45)
+    # ax1.plot(time, attention_values)
+    # ax1.set_ylim(0, 100)
 
     # Put values into list here and iterate sample counter
     if sample_flag == 0 and sample_counter != 10 and old_value != new_value:
         # attention_average = new_value
         attention_average.append(new_value)
         sample_counter += 1
+        print("COLLECTED %s / 10 EEG DATA POINTS" % (sample_counter))
 
     # Ignore if values are the same
     if old_value == new_value:
@@ -115,22 +111,34 @@ def plot_Mindwave_data(i):
 
     # Calculate average of the first 10 samples
     if sample_counter == 10 and sample_flag == 0:
-        print("Calculating Average...")
+        print("SAMPLING COMPLETE!")
+        print("CALCULATING EEG THRESHOLD...")
         threshold = sum(attention_average) / len(attention_average)
-        print("Average : ", threshold)
-        print("Flag status : ", sample_flag)
+        print("THRESHOLD TO BREAK : ", threshold)
+        #print("Flag status : ", sample_flag)
         sample_flag = 1
+
+    threshold_values.append(threshold)
+    ax1.plot(time, attention_values, label="Attention Values")
+    ax1.plot(time, threshold_values, label="Set Threshold")
+
+    ax1.set_xticklabels(time, rotation=45)
+    # ax1.set_xticklabels(rotation=45)
+    ax1.plot(time, attention_values)
+    # ax1.set_ylim(0, 100)
+
+    ax1.legend(loc="upper right", shadow=True, fancybox=True)
 
     if new_value > threshold and sample_flag == 1:
         print(
-            "\nCurrent threshold value [ %s ] || Value sent to ESP [ %s ] "
+            "\nCurrent threshold value [ %s ] || Attention value sent to ESP [ %s ] "
             % (threshold, new_value),
         )
         # print("Sent to esp : ", new_value)
-        print(
-            "Raw value: %s, Attention: %s, Meditation: %s"
-            % (headset.raw_value, headset.attention, headset.meditation)
-        )
+        # print(
+        #     "Raw value: %s, Attention: %s, Meditation: %s"
+        #     % (headset.raw_value, headset.attention, headset.meditation)
+        # )
         dataToESP32 = bytearray(str(headset.attention), "utf8")
         serial_Port.write(dataToESP32)
         serial_Port.write(b"\r\n")
