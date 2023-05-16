@@ -111,11 +111,11 @@ def plot_Mindwave_data(i):
 
     # Calculate average of the first 10 samples
     if sample_counter == 10 and sample_flag == 0:
-        print("SAMPLING COMPLETE!")
+        print("\nSAMPLING COMPLETE!")
         print("CALCULATING EEG THRESHOLD...")
         threshold = sum(attention_average) / len(attention_average)
         print("THRESHOLD TO BREAK : ", threshold)
-        #print("Flag status : ", sample_flag)
+        # print("Flag status : ", sample_flag)
         sample_flag = 1
 
     threshold_values.append(threshold)
@@ -124,7 +124,7 @@ def plot_Mindwave_data(i):
 
     ax1.set_xticklabels(time, rotation=45)
     # ax1.set_xticklabels(rotation=45)
-    ax1.plot(time, attention_values)
+    #ax1.plot(time, attention_values)
     # ax1.set_ylim(0, 100)
 
     ax1.legend(loc="upper right", shadow=True, fancybox=True)
@@ -139,7 +139,12 @@ def plot_Mindwave_data(i):
         #     "Raw value: %s, Attention: %s, Meditation: %s"
         #     % (headset.raw_value, headset.attention, headset.meditation)
         # )
-        dataToESP32 = bytearray(str(headset.attention), "utf8")
+        #dataToESP32 = bytearray(str(headset.attention), "utf8")
+        dataToESP32 = bytearray(str(1), "utf8")
+        serial_Port.write(dataToESP32)
+        serial_Port.write(b"\r\n")
+    else:
+        dataToESP32 = bytearray(str(0), "utf8")
         serial_Port.write(dataToESP32)
         serial_Port.write(b"\r\n")
 
@@ -154,5 +159,5 @@ ax1 = plt.subplot(122)
 ax.set_facecolor("#DEDEDE")
 ax1.set_facecolor("#DEDEDE")
 
-ani = FuncAnimation(fig, plot_Mindwave_data, interval=250)
+ani = FuncAnimation(fig, plot_Mindwave_data, interval=250, cache_frame_data=False )
 plt.show()

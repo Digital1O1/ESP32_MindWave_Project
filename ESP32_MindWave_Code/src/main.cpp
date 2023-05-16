@@ -3,9 +3,15 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <SPI.h>
 
-#define SCREEN_WIDTH 128 // oled display width, in pixels
-#define SCREEN_HEIGHT 64 // oled display height, in pixels
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+#define OLED_RESET 5        // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 #define LED_PIN 2
 #define RC_CAR_PIN 5
 #define PWM_MUTIPLIER 1.5
@@ -26,11 +32,12 @@ int value_array[10];
 int old_attention_value = 0;
 bool sample_flag = false;
 bool set_threshold = false;
+bool drive_car = false;
 int sample_counter = 0;
 int running_sum = 0;
 int threshold_average = 0;
 int eeg_array_size = sizeof(eeg_array) / sizeof(eeg_array[0]);
-Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+// Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void setup()
 {
@@ -40,23 +47,38 @@ void setup()
   pinMode(RC_CAR_PIN, OUTPUT);
 
   // attach the channel to the GPIO to be controlled
-  ledcAttachPin(LED_PIN, ledChannel);
-
-  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  // ledcAttachPin(LED_PIN, ledChannel);
+  ledcAttachPin(RC_CAR_PIN, ledChannel);
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
   { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ;
   }
   oled.clearDisplay();
-  oled.setTextSize(1);
+  oled.setTextSize(2);
   oled.setTextColor(WHITE);
+
+  oled.setCursor(0, 0);
+  oled.print("ESP32");
+  oled.setCursor(0, 20);
+  oled.print("READY");
+  oled.display();
+  Serial.println("PROGRAM STARTED");
+  ledcWrite(ledChannel, 255);
 }
 void loop()
 {
+
   // Check to see if anything is available in the serial receive buffer || ONLY THE ATTENTION VALUES ARE BEING SENT
   while (Serial.available() > 0)
   {
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.print("FOCUS!!!");
+    // oled.setCursor(0, 40);
+    // oled.print("DATA");
+    oled.display();
 
     // Create a place to hold the incoming message
     static char message[MAX_MESSAGE_LENGTH];
@@ -71,36 +93,51 @@ void loop()
       // Add the incoming byte to our message
       message[message_pos] = incoming_byte;
       message_pos++;
+
+      // oled.clearDisplay();
+      // oled.setCursor(0, 0);
+      // oled.print("SAMPLING");
+      // oled.setCursor(0, 20);
+      // oled.print("INCOMING");
+      // oled.setCursor(0, 20);
+      // oled.print("DATA");
+      // oled.display();
     }
 
     // Full message received DO STUFF HERE
     else
     {
+      drive_car = true;
       // Add null character to string
       message[message_pos] = '\0';
-      oled.clearDisplay();
 
       int attention_value = atoi(message);
       int pwm_attention_value = attention_value * PWM_MUTIPLIER;
 
-      oled.setCursor(0, 0);
-      oled.print("Attention  : ");
-      oled.setCursor(80, 0);
-      // Attention value
-      oled.print(attention_value);
+      // oled.setCursor(0, 0);
+      // oled.print("Attention  : ");
+      // oled.setCursor(80, 0);
+      // // Attention value
+      // oled.print(attention_value);
 
-      oled.setCursor(0, 55);
-      oled.print("PWM value : ");
-      oled.setCursor(80, 55);
-      oled.print(pwm_attention_value);
-      oled.display();
+      // oled.setCursor(0, 55);
+      // oled.print("PWM value : ");
+      // oled.setCursor(80, 55);
+      // oled.print(pwm_attention_value);
+      // oled.display();
 
-      // Store previous value here
-      // old_attention_value = attention_value;
-      // Reset for the next message
-      ledcWrite(ledChannel, pwm_attention_value);
-
+      if (attention_value > 0)
+      {
+        ledcWrite(ledChannel, 0);
+      }
+      else
+      {
+        attention_value = -1;
+        ledcWrite(ledChannel, 255);
+      }
       message_pos = 0;
     }
+    // drive_car = false;
   }
+  drive_car = false;
 }
