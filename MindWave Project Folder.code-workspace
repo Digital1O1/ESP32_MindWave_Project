@@ -10,6 +10,14 @@
 		{
 			"name": "Seeed_XAIO_Led_Test",
 			"path": "../Seeed_XAIO_Led_Test"
+		},
+		{
+			"name": "Seeed_XAIO_I2C_OLED_Test",
+			"path": "../Seeed_XAIO_I2C_OLED_Test"
+		},
+		{
+			"name": "XAIO_Seeed_I2C_Scanner",
+			"path": "../XAIO_Seeed_I2C_Scanner"
 		}
 	],
 	"settings": {
