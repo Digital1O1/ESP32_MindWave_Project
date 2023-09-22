@@ -150,7 +150,6 @@ def plot_Mindwave_data(i):
 
     old_value = headset.attention
 
-
 threshold = 0
 old_value = 0
 fig = plt.figure(figsize=(12, 6), facecolor="#DEDEDE")
